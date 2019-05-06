@@ -1,0 +1,4 @@
+<plugin>
+    <name>CompilerPlugin</name>
+    <classname>nl.vindh.gdpr.CompilerPlugin</classname>
+</plugin>
