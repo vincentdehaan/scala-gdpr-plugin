@@ -14,23 +14,18 @@
 
 ---
 
-@snap[north span-100]
-## Art. 30, sect. 1 of the GDPR
-@snapend
+### Art. 30, sect. 1 of the GDPR
 
-@snap[west span-50]
-> Each controller [...] shall maintain a record of processing activities under its responsibility. That record shall contain all of the following information:
-> [...]
-> (b) the purposes of the processing;
-> (c) [...] the categories of personal data;
-> [...]
-@snapend
+@snap[text-left]
+Each controller [...] shall maintain a record of *processing* activities under its responsibility. That record shall contain all of the following information:
 
-@snap[east span-50]
-[ul]
-- What is a _processing_?
-- How can the compliance officer have _complete_ record of all processings?
-[ulend]
+[...]
+
+(b) the purposes of the processing;
+
+(c) [...] the categories of personal data;
+
+[...]
 @snapend
 
 ---
@@ -42,51 +37,34 @@ Use @annotations
 
 ---
 
-@snap[east span-50]
-```
+```scala
 object CustomerRepository {
-    
-    def getCustomerById(id: String) = ???
+  @Processing
+  def getCustomerById(id: String) = ???
 
-
-    def getOrderById(id: String) = ???
+  @Processing
+  def getOrderById(id: String) = ???
 }
-```
 
-@snap[west span-50]
-```
 object SomeFeature {
-    val customer = getCustomerById(id)
+  val customer = CustomerRepository.getCustomerById(id) 
+    : @ProcessingInstance(purpose = "Customer support")
 
-    val order = getOrderById(orderId)    
+  val order = CustomerRepository.getOrderById(orderId) 
+    : @ProcessingInstance(purpose = "Some other purpose")
 }
 ```
+@[1,3,6-10,13,15]()
+@[2-3, 5-6](Mark the repository methods that indicate a processing)
+@[10-11,13-14](Mark the individual processings)
 
 ---
 
-@snap[east span-50]
-```
-object CustomerRepository {
-    @Processing
-    def getCustomerById(id: String) = ???
+### Todo
 
-    @Processing
-    def getOrderById(id: String) = ???
-}
-```
-@snapend
+1. If a method invocation has a `@ProcessingInstance` annotation, print it.
 
-@snap[west span-50]
-```
-object SomeFeature {
-    val customer = getCustomerById(id) 
-        : @ProcessingInstance(purpose = "Customer support")
-
-    val order = getOrderById(orderId) 
-        : @ProcessingInstance(purpose = "Some other purpose")
-}
-```
-@snapend
+2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
 
 ---
 
@@ -136,17 +114,28 @@ packageobjects   3  load package objects
 
 ---
 
+## Where do we insert our plugin?
+
+As early as possible, but not earlier
+
+Inspect the trees!
+
+---
+
 ## Inspecting the tree
-
+@snap[text-left]
 `scala -Xprint:<phase> -Yshow-trees`
+@snapend
 
+@snap[text-left]
 `scala -Ybrowse:<phase>`
+@snapend
 
 ---
 
 ## Some example code
 
-```
+```scala
 class Processing 
   extends scala.annotation.Annotation {}
 
@@ -162,16 +151,13 @@ object DataProcessing extends App {
   val name = (Repository.getName("john@doe.com") 
   : @ProcessingInstance(purpose = "Customer support")) + "a"
 
-  // This should yield a compiler error!
   val name2 = Repository.getName("foo@bar.com")
 }
 ```
-
----
-
-## Where do we insert our plugin?
-
-As early as possible, but not earlier
+@[1-5](The annotations)
+@[8-9](A data processing method)
+@[13-14](Correct usage)
+@[16](This should yield a compiler error!)
 
 ---
 
@@ -199,7 +185,7 @@ See https://docs.scala-lang.org/overviews/plugins/index.html
 
 ---
 
-```
+```scala
 class CompilerPlugin(override val global: Global)
   extends Plugin {
   override val name = "gdpr-plugin"
@@ -228,6 +214,9 @@ class CompilerPluginComponent(val global: Global)
 }
 
 ```
+@[3-4,11](Plugin metadata)
+@[12](Where to insert the plugin?)
+@[22](Here the magic happens!)
 
 ---
 
@@ -241,98 +230,101 @@ class CompilerPluginComponent(val global: Global)
 
 ### Play with the trees on the REPL
 
-```
+```scala
 import scala.reflect.runtime.universe._
 val tree = q"1+1"
 showRaw(tree)
 ```
 
+---?code=plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
+
+@[31-32,45-46](Match on the Typed(Apply, _)) pattern)
+@[32](What is in `tpt`?)
+
 ---
 
+```scala
+case Typed(appl@ Apply(a, b), tpt) => {
+  println(showRaw(tpt))
+  // ...
+}
+/*
+TypeTree().setOriginal(
+  Annotated(
+    Apply(
+      Select(New(Ident(ProcessingInstance)), termNames.CONSTRUCTOR), 
+      List(
+        AssignOrNamedArg(Ident(TermName("purpose")), 
+        Literal(Constant("Customer support"))))), 
+    Apply(
+      Select(Ident(Repository), TermName("getName")), 
+      List(Literal(Constant("john@doe.com"))))))
+*/
 ```
-override def transform(tree: Tree) = tree match {
-      case Typed(appl@ Apply(a, b), tpt) => {
-        tpt.asInstanceOf[TypeTree].original match {
-          // ...
-        }
-        super.transform(tree)
-      }
+@[1-2](Use `showRaw` to look inside `tpt`)
+@[6-15](Let's guess `tpt.asInstanceOf[TypeTree].original`)
+
+
+---
+
+### Extract a complicated tree
+
+```scala
+/*
+val tree = Annotated(
+    Apply(
+      Select(New(Ident(ProcessingInstance)), termNames.CONSTRUCTOR), 
+      List(
+        AssignOrNamedArg(Ident(TermName("purpose")), 
+        Literal(Constant("Customer support"))))), 
+    Apply(
+      Select(Ident(Repository), TermName("getName")), 
+      List(Literal(Constant("john@doe.com")))))
+*/
+tree match {
+  case Annotated(Apply(Select(New(Ident(ProcessingInstance)), _), ...
+}
 ```
 
 ---
 
 ### Quasiquotes as extractors
 
-```
+```scala
 import scala.reflect.runtime.universe._
 val tree = q"1+2"
 val q"1+$a" = tree
 ```
 
----
+---?code=plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
 
-```
-    case Typed(appl@ Apply(a, b), tpt) => {
-    tpt.asInstanceOf[TypeTree].original match {
-        case q"$expr: @ProcessingInstance(purpose = $purp)" => {
-        println(
-            s"""
-                |Data processing found in ${tree.pos.source}, line ${tree.pos.line}
-                | >> $expr
-                | Purpose: $purp
-            """.stripMargin)
-        }
-    }
-    super.transform(tree)
-    }
-    ```
+@[33-44](Match using quasiquotes)
+@[32-46](Rule #1 has been implemented)
 
 ---
 
 ### Todo
 
-2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+@snap[text-left]
+2 . If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+@snapend
 
----
+---?code=plugin/plugin.scala?lang=scala&title=Catch the unannotated processing
 
-```
-val annotatedApplies = mutable.Set[Tree]()
-// ...
-case Typed(appl@ Apply(a, b), tpt) => {
-        tpt.asInstanceOf[TypeTree].original match {
-          case q"$expr: @ProcessingInstance(purpose = $purp)" => {
-            println(
-              s"""
-                 |Data processing found in ${tree.pos.source}, line ${tree.pos.line}
-                 | >> $expr
-                 | Purpose: $purp
-              """.stripMargin)
-            annotatedApplies += appl
-          }
-        }
-        super.transform(tree)
-      }
-```
-
----
-
-override def transform(tree: Tree) = tree match {
-// ...
-      case t@ Apply(a, b) if t.symbol.annotations.toString == "List(Processing)" => { // TODO: not nice!
-        if(!annotatedApplies.contains(t)) {
-          println(
-            s"""
-              |ERROR: Data processing found without purpose annotation in ${tree.pos.source}, line ${tree.pos.line}
-              | >> $t
-            """.stripMargin)
-          global.reporter.error(tree.pos, "Unannotated data processing found")
-        }
-        super.transform(tree)
-      }
-      case _ =>
-      super.transform(tree)
-    }
+@[47](Catch all processings)
+@[30,41](Keep track of the annotated processings)
+@[47,49](Filter the unannotated processings)
+@[50-55](Report the error)
+@[47-58](Rule #2 has been implemented)
 
 ---
 
 ## Demo
+
+---
+
+## Looking ahead
+
+- File output
+- Sbt plugin
+- Scala 3 / Dotty

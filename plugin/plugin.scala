@@ -9,15 +9,15 @@ import scala.collection.mutable
 
 class CompilerPlugin(override val global: Global)
   extends Plugin {
-  override val name = "compiler-plugin"
-  override val description = "Compiler plugin"
+  override val name = "gdpr-plugin"
+  override val description = "Compiler plugin to enhance GDPR compliance"
   override val components =
     List(new CompilerPluginComponent(global))
 }
 class CompilerPluginComponent(val global: Global)
   extends PluginComponent with TypingTransformers {
   import global._
-  override val phaseName = "compiler-plugin-phase"
+  override val phaseName = "gdpr-annotation-checker"
   override val runsAfter = List("typer")
   override def newPhase(prev: Phase) =
     new StdPhase(prev) {
@@ -40,10 +40,12 @@ class CompilerPluginComponent(val global: Global)
               """.stripMargin)
             annotatedApplies += appl
           }
+          case _ =>
         }
         super.transform(tree)
       }
-      case t@ Apply(a, b) if t.symbol.annotations.toString == "List(Processing)" => { // TODO: not nice!
+      case t@ Apply(a, b) 
+        if t.symbol.annotations.toString == "List(Processing)" => { // TODO: not nice!
         if(!annotatedApplies.contains(t)) {
           println(
             s"""
