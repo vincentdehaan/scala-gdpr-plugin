@@ -115,3 +115,224 @@ ValDef(
   )
 )
 ```
+
+---
+
+```
+$ scala -Xshow-phases
+    phase name  id  description
+    ----------  --  -----------
+        parser   1  parse source into ASTs, perform simple desugaring
+         namer   2  resolve names, attach symbols to named trees
+packageobjects   3  load package objects
+         typer   4  the meat and potatoes: type the trees
+        patmat   5  translate match expressions
+ 
+ ...
+
+           jvm  23  generate JVM bytecode
+      terminal  24  the last phase during a compilation run
+```
+
+---
+
+## Inspecting the tree
+
+`scala -Xprint:<phase> -Yshow-trees`
+
+`scala -Ybrowse:<phase>`
+
+---
+
+## Some example code
+
+```
+class Processing 
+  extends scala.annotation.Annotation {}
+
+class ProcessingInstance(purpose: String) 
+  extends scala.annotation.Annotation {}
+
+object Repository {
+  @Processing
+  def getName(email: String): String = "John doe"
+}
+
+object DataProcessing extends App {
+  val name = (Repository.getName("john@doe.com") 
+  : @ProcessingInstance(purpose = "Customer support")) + "a"
+
+  // This should yield a compiler error!
+  val name2 = Repository.getName("foo@bar.com")
+}
+```
+
+---
+
+## Where do we insert our plugin?
+
+As early as possible, but not earlier
+
+---
+
+```
+$ scala -Xshow-phases
+    phase name  id  description
+    ----------  --  -----------
+        parser   1  parse source into ASTs, perform simple desugaring
+         namer   2  resolve names, attach symbols to named trees
+packageobjects   3  load package objects
+         typer   4  the meat and potatoes: type the trees
+        patmat   5  translate match expressions
+ 
+ ...
+
+           jvm  23  generate JVM bytecode
+      terminal  24  the last phase during a compilation run
+```
+
+---
+
+## Plugin skeleton
+
+See https://docs.scala-lang.org/overviews/plugins/index.html
+
+---
+
+```
+class CompilerPlugin(override val global: Global)
+  extends Plugin {
+  override val name = "gdpr-plugin"
+  override val description = "Compiler plugin to enhance GDPR compliance"
+  override val components =
+    List(new CompilerPluginComponent(global))
+}
+class CompilerPluginComponent(val global: Global)
+  extends PluginComponent with TypingTransformers {
+  import global._
+  override val phaseName = "gdpr-annotation-checker"
+  override val runsAfter = List("typer")
+  override def newPhase(prev: Phase) =
+    new StdPhase(prev) {
+      override def apply(unit: CompilationUnit) {
+        unit.body = new MyTypingTransformer(unit).transform(unit.body)
+      }
+    }
+  class MyTypingTransformer(unit: CompilationUnit)
+    extends TypingTransformer(unit) {
+// ...
+      override def transform(tree: Tree) = // ...
+  }
+  def newTransformer(unit: CompilationUnit) =
+    new MyTypingTransformer(unit)
+}
+
+```
+
+---
+
+### Todo
+
+1. If a method invocation has a `@ProcessingInstance` annotation, print it.
+
+2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+
+---
+
+### Play with the trees on the REPL
+
+```
+import scala.reflect.runtime.universe._
+val tree = q"1+1"
+showRaw(tree)
+```
+
+---
+
+```
+override def transform(tree: Tree) = tree match {
+      case Typed(appl@ Apply(a, b), tpt) => {
+        tpt.asInstanceOf[TypeTree].original match {
+          // ...
+        }
+        super.transform(tree)
+      }
+```
+
+---
+
+### Quasiquotes as extractors
+
+```
+import scala.reflect.runtime.universe._
+val tree = q"1+2"
+val q"1+$a" = tree
+```
+
+---
+
+```
+    case Typed(appl@ Apply(a, b), tpt) => {
+    tpt.asInstanceOf[TypeTree].original match {
+        case q"$expr: @ProcessingInstance(purpose = $purp)" => {
+        println(
+            s"""
+                |Data processing found in ${tree.pos.source}, line ${tree.pos.line}
+                | >> $expr
+                | Purpose: $purp
+            """.stripMargin)
+        }
+    }
+    super.transform(tree)
+    }
+    ```
+
+---
+
+### Todo
+
+2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+
+---
+
+```
+val annotatedApplies = mutable.Set[Tree]()
+// ...
+case Typed(appl@ Apply(a, b), tpt) => {
+        tpt.asInstanceOf[TypeTree].original match {
+          case q"$expr: @ProcessingInstance(purpose = $purp)" => {
+            println(
+              s"""
+                 |Data processing found in ${tree.pos.source}, line ${tree.pos.line}
+                 | >> $expr
+                 | Purpose: $purp
+              """.stripMargin)
+            annotatedApplies += appl
+          }
+        }
+        super.transform(tree)
+      }
+```
+
+---
+
+override def transform(tree: Tree) = tree match {
+// ...
+      case t@ Apply(a, b) if t.symbol.annotations.toString == "List(Processing)" => { // TODO: not nice!
+        if(!annotatedApplies.contains(t)) {
+          println(
+            s"""
+              |ERROR: Data processing found without purpose annotation in ${tree.pos.source}, line ${tree.pos.line}
+              | >> $t
+            """.stripMargin)
+          global.reporter.error(tree.pos, "Unannotated data processing found")
+        }
+        super.transform(tree)
+      }
+      case _ =>
+      super.transform(tree)
+    }
+
+---
+
+## Demo
