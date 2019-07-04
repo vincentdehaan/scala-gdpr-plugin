@@ -64,7 +64,7 @@ object SomeFeature {
 
 1. If a method invocation has a `@ProcessingInstance` annotation, print it.
 
-2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+2. If an invocation of a method that is defined with a `@Processing` annotation, does not have a `@ProcessingInstance` annotation, throw a compiler error.
 
 ---
 
@@ -148,8 +148,8 @@ object Repository {
 }
 
 object DataProcessing extends App {
-  val name = (Repository.getName("john@doe.com") 
-  : @ProcessingInstance(purpose = "Customer support")) + "a"
+  val name = Repository.getName("john@doe.com") 
+  : @ProcessingInstance(purpose = "Customer support")
 
   val name2 = Repository.getName("foo@bar.com")
 }
@@ -224,7 +224,7 @@ class CompilerPluginComponent(val global: Global)
 
 1. If a method invocation has a `@ProcessingInstance` annotation, print it.
 
-2. If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+2. If an invocation of a method that is defined with a `@Processing` annotation, does not have a `@ProcessingInstance` annotation, throw a compiler error.
 
 ---
 
@@ -306,14 +306,14 @@ val q"1+$a" = tree
 ### Todo
 
 @snap[text-left]
-2 . If an invocation of a method that is defined with a `@Processing` annotation, does not have an `@ProcessingInstance` annotation, throw a compiler error.
+2 . If an invocation of a method that is defined with a `@Processing` annotation, does not have a `@ProcessingInstance` annotation, throw a compiler error.
 @snapend
 
 ---?code=plugin/plugin.scala?lang=scala&title=Catch the unannotated processing
 
 @[47](Catch all processings)
 @[30,41](Keep track of the annotated processings)
-@[47,49](Filter the unannotated processings)
+@[47-49](Filter the unannotated processings)
 @[50-55](Report the error)
 @[47-58](Rule #2 has been implemented)
 

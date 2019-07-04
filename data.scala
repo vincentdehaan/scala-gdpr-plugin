@@ -12,8 +12,8 @@ object Repository {
 }
 
 object DataProcessing extends App {
-  val name = (Repository.getName("john@doe.com") : @ProcessingInstance(purpose = "Customer support")) + "a"
+  val name = Repository.getName("john@doe.com") : @ProcessingInstance(purpose = "Customer support")
 
   // This should yield a compiler error!
-  val name2 = Repository.getName("john@doe.com")
+  //val name2 = Repository.getName("john@doe.com")
 }
