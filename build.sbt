@@ -6,4 +6,3 @@ lazy val sbtPlugin = project in file("sbtPlugin")
 
 lazy val example = (project in file("example"))
   .settings(publish := {})
-.dependsOn(runtime)
