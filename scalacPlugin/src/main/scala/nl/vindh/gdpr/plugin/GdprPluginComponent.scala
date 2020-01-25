@@ -1,15 +1,15 @@
 package nl.vindh.gdpr.plugin
 
-import scala.tools.nsc._
+import scala.tools.nsc.Phase
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.transform._
-import scala.reflect.internal._
 
 import scala.tools.nsc.Global
 import scala.collection.mutable
 
 class GdprPluginComponent(val global: Global)
   extends PluginComponent with TypingTransformers {
+  import global._
   override val phaseName = "gdpr-annotation-checker"
   override val runsAfter = List("typer")
   override def newPhase(prev: Phase) =

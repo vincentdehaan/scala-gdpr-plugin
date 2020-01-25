@@ -1,6 +1,8 @@
-name := "scalacPlugin"
+organization := "nl.vindh"
 
-version := "0.1"
+name := "scalac-gdpr"
+
+version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.13.1"
 
