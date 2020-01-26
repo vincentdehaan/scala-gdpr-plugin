@@ -10,16 +10,29 @@ The plugin in this repository can help find and catalogue processings of persona
 
 ## Compiling and running the plugin
 
-In the `plugin` folder:
-```
-scalac -d classes plugin.scala
-cd classes
-jar cf ../gdpr.jar .
-```
-Or run `build.sh`.
+At first, make sure that the plugin is available in the local Ivy repository:
 
-In the source folder:
 ```
-scalac -Xplugin:./plugin/gdpr.jar -Xplugin-list # shows that the plugin is loaded correctly
-scalac -Xplugin:./plugin/gdpr.jar data.scala
+sbt runtime/publishLocal
+sbt scalacPlugin/publishLocal
+sbt sbtPlugin/publishLocal
 ```
+
+Add the plugin to `project/plugins.sbt`:
+
+```scala
+addSbtPlugin("nl.vindh" %% "sbt-gdpr" % "0.1-SNAPSHOT")
+```
+
+Add these lines to `build.sbt`, enabling the plugin and importing the runtime:
+```scala
+libraryDependencies += "nl.vindh" %% "scala-gdpr-runtime" % "0.1-SNAPSHOT"
+
+enablePlugins(GdprSbtPlugin)
+```
+
+TODO
+---
+- Report the data type of the `@Processing` annotation.
+- Allow custom `ProcessingInstanceRecord` types.
+- Support Scala 2.11 and 2.13.
