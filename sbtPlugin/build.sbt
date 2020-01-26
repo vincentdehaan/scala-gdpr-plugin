@@ -4,13 +4,14 @@ name := "sbt-gdpr"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.12.8"
 
 libraryDependencies += "org.scala-sbt" % "sbt" % "1.3.7" % "provided"
 libraryDependencies += "nl.vindh" %% "scalac-gdpr" % version.value
 
+
 enablePlugins(BuildInfoPlugin)
-//enablePlugins(SbtPlugin)
+enablePlugins(SbtPlugin)
 
 buildInfoKeys := Seq[BuildInfoKey](version)
 buildInfoPackage := "nl.vindh.gdpr.sbt"

@@ -1,1 +1,1 @@
-addSbtPlugin("nl.vindh" % "gdpr-sbt" % "0.1-SNAPSHOT")
+addSbtPlugin("nl.vindh" %% "sbt-gdpr" % "0.1-SNAPSHOT")

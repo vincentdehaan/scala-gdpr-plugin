@@ -4,22 +4,23 @@ import sbt._
 import sbt.Keys._
 
 object GdprSbtPlugin extends AutoPlugin {
-  //import GdprKeys._
+  import GdprKeys._
+
+  override def globalSettings: Seq[Def.Setting[_]] = super.globalSettings ++
+    Seq(gdprRecordClassName := "nl.vindh.gdpr.DefaultProcessingInstanceRecord")
 
   override def projectSettings: Seq[Def.Setting[_]] =
     super.projectSettings ++ gdprSettings
 
   private val scalacPluginName = "gdpr-plugin"
 
-  private val gdprSettings = {
-    //val path = gdprReportTarget.value
-    //println("PATH" + path)
+  private lazy val gdprSettings = {
     Seq(
-      addCompilerPlugin("nl.vindh" %% "scala-gdpr-plugin" % BuildInfo.version)//,
-//      scalacOptions ++= Seq(
-    //    s"-P:"//$scalacPluginName:reportPath:TODO",
-        //s"-P:$scalacPluginName:recordClassName:TODO"
-  //    )
+      addCompilerPlugin("nl.vindh" %% "scalac-gdpr" % BuildInfo.version),
+      scalacOptions ++= Seq(
+        s"-P:$scalacPluginName:reportPath=${crossTarget.value.getAbsolutePath}/gdpr",
+        s"-P:$scalacPluginName:recordClassName=${gdprRecordClassName.value}"
+      )
     )
   }
 }

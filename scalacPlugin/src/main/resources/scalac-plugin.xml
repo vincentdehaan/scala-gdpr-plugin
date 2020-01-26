@@ -1,0 +1,4 @@
+<plugin>
+    <name>gdpr-plugin</name>
+    <classname>nl.vindh.gdpr.plugin.GdprPlugin</classname>
+</plugin>

@@ -7,7 +7,7 @@ import scala.tools.nsc.transform._
 import scala.tools.nsc.Global
 import scala.collection.mutable
 
-class GdprPluginComponent(val global: Global)
+class GdprPluginComponent(val global: Global, options: PluginOptions)
   extends PluginComponent with TypingTransformers {
   import global._
   override val phaseName = "gdpr-annotation-checker"
@@ -25,6 +25,8 @@ class GdprPluginComponent(val global: Global)
       case Typed(appl@ Apply(a, b), tpt) => {
         tpt.asInstanceOf[TypeTree].original match {
           case q"$expr: @ProcessingInstance(purpose = $purp)" => {
+            println(options.reportPath)
+            println(options.recordClassName)
             println(
               s"""
                  |Data processing found in ${tree.pos.source}, line ${tree.pos.line}
