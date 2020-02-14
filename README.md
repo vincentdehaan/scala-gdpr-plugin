@@ -13,8 +13,8 @@ The plugin in this repository can help find and catalogue processings of persona
 At first, make sure that the plugin is available in the local Ivy repository:
 
 ```
-sbt runtime/publishLocal
-sbt scalacPlugin/publishLocal
+sbt +runtime/publishLocal
+sbt +scalacPlugin/publishLocal
 sbt sbtPlugin/publishLocal
 ```
 
