@@ -236,7 +236,7 @@ val tree = q"1+1"
 showRaw(tree)
 ```
 
----?code=plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
+---?code=presentation/plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
 
 @[31-32,45-46](Match on the Typed(Apply, _)) pattern)
 @[32](What is in `tpt`?)
@@ -296,7 +296,7 @@ val tree = q"1+2"
 val q"1+$a" = tree
 ```
 
----?code=plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
+---?code=presentation/plugin/plugin.scala?lang=scala&title=Catch the `@ProcessingInstance`
 
 @[33-44](Match using quasiquotes)
 @[32-46](Rule #1 has been implemented)
@@ -309,7 +309,7 @@ val q"1+$a" = tree
 2 . If an invocation of a method that is defined with a `@Processing` annotation, does not have a `@ProcessingInstance` annotation, throw a compiler error.
 @snapend
 
----?code=plugin/plugin.scala?lang=scala&title=Catch the unannotated processing
+---?code=presentation/plugin/plugin.scala?lang=scala&title=Catch the unannotated processing
 
 @[47](Catch all processings)
 @[30,41](Keep track of the annotated processings)
