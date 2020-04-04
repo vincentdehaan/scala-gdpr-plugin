@@ -17,7 +17,7 @@
 ### Art. 30, sect. 1 of the GDPR
 
 @snap[text-left]
-Each controller [...] shall maintain a record of *processing* activities under its responsibility. That record shall contain all of the following information:
+Each controller [...] shall maintain a record of **processing activities** under its responsibility. That record shall contain all of the following information:
 
 [...]
 
@@ -27,6 +27,12 @@ Each controller [...] shall maintain a record of *processing* activities under i
 
 [...]
 @snapend
+
+---
+
+### Example: a banking application
+
+![Loan app](presentation/loan_app.png)
 
 ---
 
@@ -327,4 +333,5 @@ val q"1+$a" = tree
 
 - File output
 - Sbt plugin
+- Documentation as code
 - Scala 3 / Dotty
